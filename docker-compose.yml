@@ -26,7 +26,7 @@ services:
     environment:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PWD}
-      MYSQL_ROOT_PASSWORD: ${DB_PWD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
 networks:
   springapimysql-net:
