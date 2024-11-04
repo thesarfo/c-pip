@@ -1,5 +1,6 @@
 services:
   api_service:
+    container_name: backend-api
     build: .
     restart: always
     ports:
@@ -16,15 +17,16 @@ services:
 
   mysqldb:
     image: "mysql:8.0"
+    container_name: backend-db
     restart: always
     ports:
       - 3306:3306
     networks:
       - springapimysql-net
     environment:
-      MYSQL_DATABASE: labcrud
-      MYSQL_USER: thesarfo
-      MYSQL_PASSWORD: password
-      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PWD}
+      MYSQL_ROOT_PASSWORD: ${DB_PWD}
 networks:
   springapimysql-net:
