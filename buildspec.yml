@@ -10,7 +10,6 @@ phases:
   build:
     commands:
       - echo Building the Docker image...
-      - mvn clean package
       - docker build -t $REPOSITORY_URI:latest .
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION
   post_build:
@@ -19,5 +18,5 @@ phases:
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION
 artifacts:
-  files: 'imagedefinitions.json'
+  files: '**/*'
   discard-paths: yes
