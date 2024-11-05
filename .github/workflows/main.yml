@@ -8,7 +8,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: labcrud-app
+  ECR_REPOSITORY: labcrud-repository
   ECS_SERVICE: labcrud-service
   ECS_CLUSTER: labcrud-cluster
 
