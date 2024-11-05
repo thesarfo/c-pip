@@ -10,6 +10,7 @@ phases:
   build:
     commands:
       - echo Building the Docker image...
+      - mvn clean package
       - docker build -t $REPOSITORY_URI:latest .
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION
   post_build:
