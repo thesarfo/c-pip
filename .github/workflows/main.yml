@@ -13,7 +13,7 @@ env:
   ECS_CLUSTER: labcrud-cluster
 
 jobs:
-  build-and-test:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -46,3 +46,32 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Retrieve AccessRoleArn from SSM
+        id: access_role
+        run: |
+          ACCESS_ROLE_ARN=$(aws ssm get-parameter --name "/AccessRoleArn" --query "Parameter.Value" --output text)
+          echo "::set-output name=access_role_arn::$ACCESS_ROLE_ARN"
+
+      - name: Retrieve AutoScalingConfigurationArn from SSM
+        id: autoscaling_config
+        run: |
+          AUTO_SCALING_ARN=$(aws ssm get-parameter --name "/AutoScalingConfigurationArn" --query "Parameter.Value" --output text)
+          echo "::set-output name=auto_scaling_arn::$AUTO_SCALING_ARN"
+
+      - name: Retrieve ImageIdentifier from SSM
+        id: image_id
+        run: |
+          IMAGE_IDENTIFIER=$(aws ssm get-parameter --name "/ImageIdentifier" --query "Parameter.Value" --output text)
+          echo "::set-output name=image_identifier::$IMAGE_IDENTIFIER"
+
+      - name: Deploy to AppRunner
+        run: |
+          aws apprunner create-service \
+            --service-name labcrud-apprunner \
+            --source-configuration image-repository=${{ steps.image_id.outputs.image_identifier }},image-repository-type=ECR \
+            --authentication-configuration access-role-arn=${{ steps.access_role.outputs.access_role_arn }} \
+            --auto-scaling-configuration-arn=${{ steps.autoscaling_config.outputs.auto_scaling_arn }} \
+            --instance-configuration cpu=1024,memory=2048 \
+            --health-check-configuration protocol=HTTP,path=/,interval=10,timeout=5,healthy-threshold=2,unhealthy-threshold=3 \
+            --environment-variables JAVA_OPTS="-Xms512m -Xmx1024m"
