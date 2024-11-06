@@ -69,10 +69,32 @@ jobs:
         run: |
           aws apprunner create-service \
             --service-name labcrud-apprunner \
-            --source-configuration image-repository=***.dkr.ecr.us-east-1.amazonaws.com/labcrud-repository,image-repository-type=ECR \
-            --authentication-configuration access-role-arn=arn:aws:iam::***:role/service-role/AppRunnerECRAccessRole \
-            --auto-scaling-configuration-arn arn:aws:apprunner:us-east-1:***:autoscalingconfiguration/DefaultConfiguration/1/00000000000000000000000000000001 \
-            --instance-configuration cpu=1024,memory=2048 \
-            --health-check-configuration protocol=HTTP,path=/,interval=10,timeout=5,healthy-threshold=2,unhealthy-threshold=3 \
-            --environment-variables "JAVA_OPTS=-Xms512m -Xmx1024m"
+            --source-configuration '{
+              "ImageRepository": {
+                "ImageIdentifier": "***.dkr.ecr.us-east-1.amazonaws.com/labcrud-repository:latest",
+                "ImageRepositoryType": "ECR",
+                "ImageConfiguration": {
+                  "RuntimeEnvironmentVariables": {
+                    "JAVA_OPTS": "-Xms512m -Xmx1024m"
+                  }
+                }
+              },
+              "AutoDeploymentsEnabled": true,
+              "AuthenticationConfiguration": {
+                "AccessRoleArn": "arn:aws:iam::***:role/service-role/AppRunnerECRAccessRole"
+              }
+            }' \
+            --instance-configuration '{
+            "Cpu": "1024",
+            "Memory": "2048"
+          }' \
+            --health-check-configuration '{
+            "Protocol": "HTTP",
+            "Path": "/",
+            "Interval": 10,
+            "Timeout": 5,
+            "HealthyThreshold": 2,
+            "UnhealthyThreshold": 3
+          }' \
+            --auto-scaling-configuration-arn "arn:aws:apprunner:us-east-1:***:autoscalingconfiguration/DefaultConfiguration/1/00000000000000000000000000000001"
 
