@@ -71,7 +71,7 @@ jobs:
             --service-name labcrud-apprunner \
             --source-configuration '{
               "ImageRepository": {
-                "ImageIdentifier": "***.dkr.ecr.us-east-1.amazonaws.com/labcrud-repository:latest",
+                "ImageIdentifier": "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}",
                 "ImageRepositoryType": "ECR",
                 "ImageConfiguration": {
                   "RuntimeEnvironmentVariables": {
@@ -81,20 +81,20 @@ jobs:
               },
               "AutoDeploymentsEnabled": true,
               "AuthenticationConfiguration": {
-                "AccessRoleArn": "arn:aws:iam::***:role/service-role/AppRunnerECRAccessRole"
+                "AccessRoleArn": "${{ steps.access_role.outputs.access_role_arn }}"
               }
             }' \
             --instance-configuration '{
-            "Cpu": "1024",
-            "Memory": "2048"
-          }' \
+              "Cpu": "1024",
+              "Memory": "2048"
+            }' \
             --health-check-configuration '{
-            "Protocol": "HTTP",
-            "Path": "/",
-            "Interval": 10,
-            "Timeout": 5,
-            "HealthyThreshold": 2,
-            "UnhealthyThreshold": 3
-          }' \
-            --auto-scaling-configuration-arn "arn:aws:apprunner:us-east-1:***:autoscalingconfiguration/DefaultConfiguration/1/00000000000000000000000000000001"
+              "Protocol": "HTTP",
+              "Path": "/",
+              "Interval": 10,
+              "Timeout": 5,
+              "HealthyThreshold": 2,
+              "UnhealthyThreshold": 3
+            }' \
+            --auto-scaling-configuration-arn "${{ steps.autoscaling_config.outputs.auto_scaling_arn }}"
 
