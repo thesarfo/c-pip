@@ -1,0 +1,25 @@
+version: 1.0
+resources:
+  service:
+    name: labcrud-apprunner
+    sourceConfiguration:
+      imageRepository:
+        imageIdentifier: !Sub "{{resolve:ssm:/ImageIdentifier}}"
+        imageRepositoryType: ECR
+        autoDeploymentsEnabled: true
+      authenticationConfiguration:
+        accessRoleArn: !Sub "{{resolve:ssm:/AccessRoleArn}}"
+    instanceConfiguration:
+      cpu: 1024  # 1 vCPU
+      memory: 2048  # 2 GB RAM
+    autoScalingConfigurationArn: !Sub "{{resolve:ssm:/AutoScalingConfigurationArn}}"
+    healthCheckConfiguration:
+      protocol: HTTP
+      path: /
+      interval: 10
+      timeout: 5
+      healthyThreshold: 2
+      unhealthyThreshold: 3
+    environment:
+      variables:
+        JAVA_OPTS: "-Xms512m -Xmx1024m"

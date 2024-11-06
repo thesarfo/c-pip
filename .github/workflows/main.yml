@@ -69,9 +69,10 @@ jobs:
         run: |
           aws apprunner create-service \
             --service-name labcrud-apprunner \
-            --source-configuration image-repository=${{ steps.image_id.outputs.image_identifier }},image-repository-type=ECR \
-            --authentication-configuration access-role-arn=${{ steps.access_role.outputs.access_role_arn }} \
-            --auto-scaling-configuration-arn=${{ steps.autoscaling_config.outputs.auto_scaling_arn }} \
+            --source-configuration image-repository=***.dkr.ecr.us-east-1.amazonaws.com/labcrud-repository,image-repository-type=ECR \
+            --authentication-configuration access-role-arn=arn:aws:iam::***:role/service-role/AppRunnerECRAccessRole \
+            --auto-scaling-configuration-arn arn:aws:apprunner:us-east-1:***:autoscalingconfiguration/DefaultConfiguration/1/00000000000000000000000000000001 \
             --instance-configuration cpu=1024,memory=2048 \
             --health-check-configuration protocol=HTTP,path=/,interval=10,timeout=5,healthy-threshold=2,unhealthy-threshold=3 \
-            --environment-variables JAVA_OPTS="-Xms512m -Xmx1024m"
+            --environment-variables "JAVA_OPTS=-Xms512m -Xmx1024m"
+

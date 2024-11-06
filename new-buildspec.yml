@@ -1,0 +1,90 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REPOSITORY_URI
+      - REPOSITORY_URI=$ECR_REGISTRY/$ECR_REPOSITORY
+
+  build:
+    commands:
+      - echo Building the Docker image...
+      - mvn clean package
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION
+
+  post_build:
+    commands:
+      - echo Pushing the Docker image...
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION
+
+      # Set up ECS cluster, service, and task definition if they don't exist
+      - echo Setting up ECS resources...
+
+      # Check if cluster exists, create if not
+      - if ! aws ecs describe-clusters --clusters $ECS_CLUSTER --region $AWS_REGION | grep "ACTIVE"; then
+        aws ecs create-cluster --cluster-name $ECS_CLUSTER --region $AWS_REGION;
+        else
+        echo "ECS Cluster $ECS_CLUSTER already exists.";
+        fi
+
+      # Register task definition
+      - |
+        echo '{
+          "family": "labcrud-task-definition",
+          "networkMode": "awsvpc",
+          "containerDefinitions": [
+            {
+              "name": "labcrud-container",
+              "image": "'$REPOSITORY_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION'",
+              "essential": true,
+              "portMappings": [
+                {
+                  "containerPort": 8080,
+                  "hostPort": 8080
+                }
+              ],
+              "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                  "awslogs-group": "/ecs/labcrud-task-definition",
+                  "awslogs-region": "$AWS_REGION",
+                  "awslogs-stream-prefix": "ecs"
+                }
+              }
+            }
+          ],
+          "requiresCompatibilities": ["FARGATE"],
+          "cpu": "1024",
+          "memory": "3072",
+          "executionRoleArn": "arn:aws:iam::$AWS_ACCOUNT_ID:role/ecsTaskExecutionRole",
+          "taskRoleArn": "arn:aws:iam::$AWS_ACCOUNT_ID:role/ecsTaskExecutionRole"
+        }' > taskdef.json
+
+      - aws ecs register-task-definition --cli-input-json file://taskdef.json --region $AWS_REGION
+
+      # Check if service exists, create if not
+      - if ! aws ecs describe-services --cluster $ECS_CLUSTER --services $ECS_SERVICE --region $AWS_REGION | grep "ACTIVE"; then
+        aws ecs create-service --cluster $ECS_CLUSTER --service-name $ECS_SERVICE \
+        --task-definition labcrud-task-definition --desired-count 1 --launch-type FARGATE \
+        --network-configuration "awsvpcConfiguration={subnets=[subnet-0123456789abcdef0],securityGroups=[sg-0123456789abcdef0],assignPublicIp=ENABLED}" \
+        --region $AWS_REGION;
+        else
+        echo "ECS Service $ECS_SERVICE already exists, updating service...";
+        aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment --region $AWS_REGION;
+        fi
+
+artifacts:
+  files:
+    - imagedefinitions.json
+  discard-paths: yes
+
+env:
+  variables:
+    AWS_REGION: us-east-1
+    ECR_REPOSITORY: labcrud-repository
+    ECS_SERVICE: labcrud-service
+    ECS_CLUSTER: labcrud-cluster
+    AWS_ACCOUNT_ID: 058264328200
