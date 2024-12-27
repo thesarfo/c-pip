@@ -1,4 +1,11 @@
-Upon pushing to the main branch, this application triggers a CodePipeline that pushes the application's image to Amazon ECS on a Fargate Launch Type.
+## Description
+
+Upon pushing to the main branch, this application triggers a CodePipeline that pushes the application's image to Amazon ECS on a Fargate Launch Type, and AWS Apprunner
+
+**The Application Contains**
+1. A Spring Boot Backend
+2. An HTML, CSS, JS Frontend
+3. An in memory H2 Database
 
 Below is a description of how the deployment flow works
 
@@ -20,6 +27,8 @@ Here’s what GitHub Actions does:
     - `docker build` creates a Docker image from your Spring Boot application.
     - `docker push` uploads this Docker image to your Amazon ECR repository.
 - Once complete, the Docker image is available in ECR, ready to be deployed.
+- **Retrieve Credentials and Deploy to AppRunner**
+  - Once the Docker image is available in ECR, we will retrieve an **AccessRoleARN**, **AutoScalingConfigurationARN** and **ImageIdentifier** from Amazon **SSM Parameter Store**, which will be used to configure an **AppRunner Service** to automatically deploy our image to AppRunner. Because of this setup, anytime a new image is pushed to ECR, that imaged is also deployed to **AppRunner**
 
 ### 3. **AWS CodePipeline Triggered**
 
@@ -44,6 +53,7 @@ The CodePipeline’s deployment stage deploys the Docker image on Amazon ECS:
 ### Summary of Flow
 
 1. **Push to GitHub** ➔ **GitHub Actions** builds & pushes the Docker image to **ECR**.
+2. **Deploy Image to Apprunner** detects a new image in ECR and deploys it to an Apprunner Service
 2. **CodePipeline** is triggered by a GitHub push, confirming that the new image is ready in ECR.
 3. **ECS Service** deploys the updated image (H2 is in-memory).
 4. **ECS** maintains container health, potentially routing traffic through an ALB if set up.
